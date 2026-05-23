@@ -1,0 +1,172 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import OSCard from '../components/OSCard.astro';
+import { OSES, CATEGORIES } from '../data/os-registry';
+
+// Group OSes by category for display
+const grouped = CATEGORIES.filter(c => c.id !== 'all').map((c) => ({
+  ...c,
+  oses: OSES.filter((o) => o.category === c.id),
+})).filter((g) => g.oses.length > 0);
+---
+<BaseLayout title="mo-install · miniOrange On-Premise IDP 5.0.0 installation reference" pageType="home">
+  <!-- Hero -->
+  <section class="border-b" style="border-color: var(--rule);">
+    <div class="mx-auto max-w-7xl px-6 pt-16 pb-12 sm:pt-24 sm:pb-16">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+        <div class="lg:col-span-8">
+          <div class="font-mono text-xs uppercase tracking-widest mb-4" style="color: var(--accent);">
+            Installation Reference · v5.0.0
+          </div>
+          <h1 class="font-display text-5xl sm:text-7xl tracking-tightest leading-[1.02] mb-6">
+            miniOrange,<br/>
+            <span style="color: var(--fg-muted);">per OS, per database.</span>
+          </h1>
+          <p class="text-lg max-w-2xl" style="color: var(--fg-muted);">
+            Pick a Linux distribution. Pick a database. Get the exact, copy-pasteable
+            commands for the version you actually run.
+          </p>
+        </div>
+        <div class="lg:col-span-4 lg:text-right">
+          <dl class="grid grid-cols-3 lg:grid-cols-1 gap-4 text-sm">
+            <div class="border-l-2 pl-3 lg:border-l-0 lg:border-r-2 lg:pl-0 lg:pr-3" style="border-color: var(--accent);">
+              <dt class="text-xs uppercase tracking-wider" style="color: var(--fg-muted);">Distributions</dt>
+              <dd class="font-display text-2xl">{OSES.length}</dd>
+            </div>
+            <div class="border-l-2 pl-3 lg:border-l-0 lg:border-r-2 lg:pl-0 lg:pr-3" style="border-color: var(--accent);">
+              <dt class="text-xs uppercase tracking-wider" style="color: var(--fg-muted);">Databases</dt>
+              <dd class="font-display text-2xl">4</dd>
+            </div>
+            <div class="border-l-2 pl-3 lg:border-l-0 lg:border-r-2 lg:pl-0 lg:pr-3" style="border-color: var(--accent);">
+              <dt class="text-xs uppercase tracking-wider" style="color: var(--fg-muted);">Built</dt>
+              <dd class="font-display text-2xl">{OSES.filter(o => o.built).length}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Search + filters -->
+  <section class="border-b sticky top-0 z-10 backdrop-blur" style="border-color: var(--rule); background: color-mix(in srgb, var(--bg) 92%, transparent);">
+    <div class="mx-auto max-w-7xl px-6 py-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+      <div class="relative flex-1 max-w-md">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 opacity-50" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          id="search"
+          type="text"
+          placeholder="Search OS or version, press / to focus"
+          class="w-full pl-9 pr-3 py-2 rounded border bg-transparent text-sm focus:outline-none focus:ring-1"
+          style="border-color: var(--rule); --tw-ring-color: var(--accent);"
+        />
+      </div>
+      <div class="flex flex-wrap gap-2" id="category-chips">
+        {CATEGORIES.map((c) => (
+          <button
+            type="button"
+            data-category={c.id}
+            class:list={[
+              'px-3 py-1.5 text-xs uppercase tracking-wider font-mono border rounded transition-colors',
+              c.id === 'all' ? 'is-active' : '',
+            ]}
+            style="border-color: var(--rule);"
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- OS sections -->
+  <section class="mx-auto max-w-7xl px-6 py-10">
+    {grouped.map((group) => (
+      <div class="mb-12 os-group" data-group={group.id}>
+        <div class="flex items-baseline justify-between mb-5">
+          <h2 class="font-display text-2xl tracking-tightest">{group.label}</h2>
+          <span class="text-xs uppercase tracking-wider font-mono" style="color: var(--fg-muted);">
+            {group.oses.length} {group.oses.length === 1 ? 'distro' : 'distros'}
+          </span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {group.oses.map((os) => (
+            <OSCard os={os} />
+          ))}
+        </div>
+      </div>
+    ))}
+
+    <div id="no-results" class="hidden text-center py-16" style="color: var(--fg-muted);">
+      <p class="font-display text-2xl mb-2">No matches.</p>
+      <p class="text-sm">Try a different search term or category.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  #category-chips button.is-active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    const search = document.getElementById('search');
+    const chips = document.querySelectorAll('#category-chips button');
+    const cards = document.querySelectorAll('[data-os-card]');
+    const groups = document.querySelectorAll('.os-group');
+    const noResults = document.getElementById('no-results');
+    let activeCategory = 'all';
+    let query = '';
+
+    function apply() {
+      let visibleTotal = 0;
+      cards.forEach((card) => {
+        const name = card.getAttribute('data-os-name') || '';
+        const category = card.getAttribute('data-os-category') || '';
+        const matchesCat = activeCategory === 'all' || category === activeCategory;
+        const matchesQuery = !query || name.includes(query);
+        const show = matchesCat && matchesQuery;
+        card.style.display = show ? '' : 'none';
+        if (show) visibleTotal++;
+      });
+      groups.forEach((group) => {
+        const visibleInGroup = group.querySelectorAll('[data-os-card]:not([style*="display: none"])').length;
+        group.style.display = visibleInGroup > 0 ? '' : 'none';
+      });
+      noResults.classList.toggle('hidden', visibleTotal > 0);
+    }
+
+    search?.addEventListener('input', (e) => {
+      query = e.target.value.trim().toLowerCase();
+      apply();
+    });
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        chips.forEach((c) => c.classList.remove('is-active'));
+        chip.classList.add('is-active');
+        activeCategory = chip.getAttribute('data-category') || 'all';
+        apply();
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        search?.focus();
+      } else if (e.key === 'Escape' && document.activeElement === search) {
+        search.value = '';
+        query = '';
+        apply();
+        search.blur();
+      }
+    });
+  })();
+</script>

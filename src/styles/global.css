@@ -1,0 +1,238 @@
+/* mo-install-guide global styles
+   ----------------------------------------------------------- */
+
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+    --bg: #FAF8F5;
+    --bg-elev: #FFFFFF;
+    --fg: #171615;
+    --fg-muted: #6B6862;
+    --rule: #E5DFD6;
+    --accent: #B45309;
+    --accent-soft: #FBEDD1;
+    --kbd-bg: #F1ECE3;
+    --code-bg: #1B1916;
+    --code-fg: #E8E4DC;
+  }
+
+  html.dark {
+    --bg: #0E0D0C;
+    --bg-elev: #171615;
+    --fg: #E8E4DC;
+    --fg-muted: #948E84;
+    --rule: #2E2B28;
+    --accent: #E0A458;
+    --accent-soft: #2A2218;
+    --kbd-bg: #22201E;
+    --code-bg: #0A0908;
+    --code-fg: #E8E4DC;
+  }
+
+  html {
+    background: var(--bg);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Newsreader', Georgia, serif;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  a {
+    color: inherit;
+    text-decoration-color: var(--rule);
+    text-underline-offset: 3px;
+  }
+
+  a:hover {
+    text-decoration-color: var(--accent);
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  /* Markdown prose */
+  .prose-runbook {
+    max-width: 72ch;
+  }
+  .prose-runbook h2 {
+    font-size: 1.6rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+  }
+  .prose-runbook h2:first-of-type {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+  .prose-runbook h3 {
+    font-size: 1.2rem;
+    margin-top: 1.75rem;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+  .prose-runbook p {
+    margin: 0.75rem 0;
+  }
+  .prose-runbook ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0.75rem 0;
+  }
+  .prose-runbook ul li {
+    position: relative;
+    padding-left: 1.25rem;
+    margin: 0.35rem 0;
+  }
+  .prose-runbook ul li::before {
+    content: '·';
+    color: var(--accent);
+    position: absolute;
+    left: 0.25rem;
+    font-weight: 700;
+  }
+  .prose-runbook ol {
+    counter-reset: step;
+    list-style: none;
+    padding-left: 0;
+  }
+  .prose-runbook ol li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 2rem;
+    margin: 0.4rem 0;
+  }
+  .prose-runbook ol li::before {
+    content: counter(step) '.';
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+  }
+
+  .prose-runbook strong {
+    font-weight: 600;
+  }
+
+  .prose-runbook table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.92rem;
+  }
+  .prose-runbook th, .prose-runbook td {
+    text-align: left;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .prose-runbook th {
+    font-family: 'IBM Plex Sans';
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+    background: transparent;
+  }
+
+  .prose-runbook code:not(pre code) {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88em;
+    padding: 0.1em 0.35em;
+    background: var(--kbd-bg);
+    border-radius: 3px;
+    color: var(--fg);
+  }
+
+  .prose-runbook pre {
+    background: var(--code-bg) !important;
+    color: var(--code-fg) !important;
+    border-radius: 6px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    margin: 0.85rem 0;
+    border: 1px solid var(--rule);
+  }
+  .prose-runbook pre code {
+    background: none !important;
+    color: inherit !important;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .prose-runbook blockquote {
+    border-left: 2px solid var(--accent);
+    padding: 0.25rem 0 0.25rem 1rem;
+    margin: 1rem 0;
+    color: var(--fg-muted);
+    font-style: normal;
+  }
+
+  /* Callouts via blockquote with marker */
+  .callout {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 0.9rem 1.1rem;
+    margin: 1.1rem 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.92rem;
+  }
+  .callout strong { color: var(--accent); }
+}
+
+@layer components {
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.18rem 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+  }
+  .badge-verified { color: #2E7A3D; border-color: #BFD9C4; background: rgba(46, 122, 61, 0.08); }
+  .badge-derived  { color: #B45309; border-color: #E8C896; background: rgba(180, 83, 9, 0.08); }
+  .badge-partial  { color: #B45309; border-color: #E8C896; background: rgba(180, 83, 9, 0.08); }
+  .badge-unverified { color: #8A6D00; border-color: #E5D178; background: rgba(138, 109, 0, 0.08); }
+  .badge-unsupported { color: #8A1F1F; border-color: #E0B7B7; background: rgba(138, 31, 31, 0.08); }
+
+  html.dark .badge-verified { color: #7DC68A; background: rgba(125, 198, 138, 0.08); border-color: rgba(125, 198, 138, 0.3); }
+  html.dark .badge-derived  { color: #E0A458; background: rgba(224, 164, 88, 0.08); border-color: rgba(224, 164, 88, 0.3); }
+  html.dark .badge-partial  { color: #E0A458; background: rgba(224, 164, 88, 0.08); border-color: rgba(224, 164, 88, 0.3); }
+  html.dark .badge-unverified { color: #D9C26E; background: rgba(217, 194, 110, 0.08); border-color: rgba(217, 194, 110, 0.3); }
+  html.dark .badge-unsupported { color: #D98B8B; background: rgba(217, 139, 139, 0.08); border-color: rgba(217, 139, 139, 0.3); }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; color: black !important; font-size: 11pt; }
+  .prose-runbook pre { background: #f5f5f5 !important; color: black !important; border: 1px solid #ccc; }
+  .prose-runbook { max-width: 100% !important; }
+  a { color: black !important; text-decoration: none; }
+}

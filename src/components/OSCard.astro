@@ -1,0 +1,84 @@
+---
+import type { OSEntry } from '../data/os-registry';
+
+interface Props {
+  os: OSEntry;
+}
+
+const { os } = Astro.props;
+
+const pmLabel = {
+  apt: 'apt', dnf: 'dnf', yum: 'yum', zypper: 'zypper', apk: 'apk',
+}[os.packageManager];
+
+const initLabel = os.initSystem === 'systemd' ? 'systemd' : 'OpenRC';
+
+// Logo color hint per OS family
+const logoFor = (slug: string): { letter: string; color: string } => {
+  if (slug.startsWith('rhel')) return { letter: 'R', color: '#EE0000' };
+  if (slug.startsWith('oracle-linux')) return { letter: 'O', color: '#F80000' };
+  if (slug.startsWith('rocky')) return { letter: 'R', color: '#10B981' };
+  if (slug.startsWith('alma')) return { letter: 'A', color: '#0F4266' };
+  if (slug.startsWith('centos')) return { letter: 'C', color: '#932279' };
+  if (slug.startsWith('ubuntu')) return { letter: 'U', color: '#E95420' };
+  if (slug.startsWith('debian')) return { letter: 'D', color: '#A81D33' };
+  if (slug.startsWith('sles')) return { letter: 'S', color: '#73BA25' };
+  if (slug.startsWith('amazon')) return { letter: 'A', color: '#FF9900' };
+  if (slug.startsWith('alpine')) return { letter: 'A', color: '#0D597F' };
+  return { letter: '·', color: '#888' };
+};
+const { letter, color } = logoFor(os.slug);
+
+const supportedCount = Object.values(os.dbs).filter(d => d.status === 'verified' || d.status === 'derived').length;
+---
+<a
+  href={os.built ? `/os/${os.slug}` : '#'}
+  class:list={[
+    'group block relative p-5 rounded-lg border transition-all',
+    os.built ? 'hover:border-amber cursor-pointer' : 'opacity-55 cursor-not-allowed',
+  ]}
+  style="border-color: var(--rule); background: var(--bg-elev);"
+  data-os-card
+  data-os-name={`${os.name} ${os.version}`.toLowerCase()}
+  data-os-category={os.category}
+  data-os-tier={os.tier}
+  aria-disabled={!os.built}
+>
+  <div class="flex items-start justify-between mb-4">
+    <div
+      class="w-11 h-11 rounded grid place-items-center font-display font-bold text-xl"
+      style={`background: ${color}; color: white;`}
+      aria-hidden="true"
+    >
+      {letter}
+    </div>
+    <div class="flex flex-col items-end gap-1">
+      {os.recommended && <span class="badge badge-verified">Recommended</span>}
+      {!os.built && <span class="badge">Coming soon</span>}
+      {os.tier === 2 && <span class="badge">Tier 2</span>}
+    </div>
+  </div>
+
+  <div class="font-display text-xl leading-tight mb-1 tracking-tightest">
+    {os.name}
+  </div>
+  <div class="text-sm mb-3" style="color: var(--fg-muted);">
+    Version {os.version}
+  </div>
+
+  <div class="flex flex-wrap gap-x-3 gap-y-1 text-[0.7rem] font-mono uppercase tracking-wider" style="color: var(--fg-muted);">
+    <span>{pmLabel}</span>
+    <span aria-hidden="true">·</span>
+    <span>{initLabel}</span>
+    <span aria-hidden="true">·</span>
+    <span>{supportedCount}/4 DBs</span>
+  </div>
+
+  {os.built && (
+    <div class="absolute bottom-4 right-5 opacity-0 group-hover:opacity-100 transition-opacity" style="color: var(--accent);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </svg>
+    </div>
+  )}
+</a>

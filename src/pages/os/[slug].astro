@@ -1,0 +1,380 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import StatusBadge from '../../components/StatusBadge.astro';
+import { OSES, osBySlug } from '../../data/os-registry';
+import type { DBStatus } from '../../data/os-registry';
+
+export async function getStaticPaths() {
+  return OSES.filter((o) => o.built).map((os) => ({ params: { slug: os.slug } }));
+}
+
+const { slug } = Astro.params;
+const os = osBySlug(slug!);
+if (!os) {
+  return Astro.redirect('/');
+}
+
+// Glob all markdown content
+const allMd = import.meta.glob('../../content/os/**/*.md', { eager: true }) as Record<string, any>;
+const find = (file: string) => allMd[`../../content/os/${os.slug}/${file}.md`];
+
+const sysPrep = find('system-prep');
+const erlangRMQ = find('erlang-rabbitmq');
+const installer = find('mo-installer');
+const verify = find('verify');
+
+const dbContent = {
+  postgres: find('db-postgres'),
+  mysql:    find('db-mysql'),
+  mssql:    find('db-mssql'),
+  oracle:   find('db-oracle'),
+} as const;
+
+const dbMeta = {
+  postgres: { label: 'PostgreSQL', tag: '16',       hint: 'Default. Broadest OS support.', color: '#336791' },
+  mysql:    { label: 'MySQL',      tag: '8.4 LTS',  hint: 'Common alternative.',           color: '#00758F' },
+  mssql:    { label: 'MSSQL',      tag: '2022',     hint: 'Microsoft-native shops.',       color: '#A91D22' },
+  oracle:   { label: 'Oracle',     tag: '19c',      hint: 'Enterprise; needs JDBC driver.', color: '#F80000' },
+} as const;
+
+type DBKey = keyof typeof dbContent;
+const dbKeys = Object.keys(dbContent) as DBKey[];
+
+const pmLabel = { apt: 'apt', dnf: 'dnf', yum: 'yum', zypper: 'zypper', apk: 'apk' }[os.packageManager];
+const initLabel = os.initSystem === 'systemd' ? 'systemd' : 'OpenRC';
+---
+<BaseLayout title={`${os.name} ${os.version} · mo-install`} pageType="detail">
+
+  <!-- Breadcrumb + OS header -->
+  <section class="border-b" style="border-color: var(--rule);">
+    <div class="mx-auto max-w-7xl px-6 py-6">
+      <nav aria-label="Breadcrumb" class="font-mono text-xs uppercase tracking-widest mb-4" style="color: var(--fg-muted);">
+        <a href="/" class="hover:opacity-70">All OS</a>
+        <span aria-hidden="true" class="mx-2">/</span>
+        <span style="color: var(--fg);">{os.name} {os.version}</span>
+      </nav>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+        <div class="lg:col-span-7">
+          <h1 class="font-display text-4xl sm:text-5xl tracking-tightest leading-tight mb-2">
+            {os.name} <span style="color: var(--fg-muted);">{os.version}</span>
+          </h1>
+          <p class="text-sm" style="color: var(--fg-muted);">
+            miniOrange On-Premise IDP 5.0.0 installation runbook for {os.name} {os.version}.
+          </p>
+        </div>
+        <div class="lg:col-span-5 grid grid-cols-3 gap-3 text-xs font-mono uppercase tracking-wider">
+          <div>
+            <div style="color: var(--fg-muted);">Package mgr</div>
+            <div class="mt-1">{pmLabel}</div>
+          </div>
+          <div>
+            <div style="color: var(--fg-muted);">Init</div>
+            <div class="mt-1">{initLabel}</div>
+          </div>
+          <div>
+            <div style="color: var(--fg-muted);">Release</div>
+            <div class="mt-1">{os.releaseYear}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DB selector -->
+  <section class="border-b" style="border-color: var(--rule); background: var(--bg-elev);">
+    <div class="mx-auto max-w-7xl px-6 py-6">
+      <div class="font-mono text-xs uppercase tracking-widest mb-3" style="color: var(--accent);">
+        Choose your database backend
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" role="tablist" aria-label="Database backend selector">
+        {dbKeys.map((key) => {
+          const m = dbMeta[key];
+          const status = os.dbs[key].status as DBStatus;
+          const note = os.dbs[key].note;
+          const ver = os.dbs[key].version;
+          const disabled = status === 'unsupported';
+          return (
+            <button
+              type="button"
+              role="tab"
+              data-db={key}
+              data-status={status}
+              disabled={disabled}
+              class:list={[
+                'db-tile group relative text-left p-4 rounded border transition-all',
+                disabled ? 'opacity-40 cursor-not-allowed' : 'hover:border-amber',
+              ]}
+              style="border-color: var(--rule); background: var(--bg);"
+              aria-disabled={disabled}
+            >
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="inline-block w-2.5 h-2.5 rounded-full" style={`background: ${m.color};`} aria-hidden="true"></span>
+                  <span class="font-display text-lg tracking-tightest">{m.label}</span>
+                </div>
+                <StatusBadge status={status} compact />
+              </div>
+              <div class="text-xs font-mono mb-1" style="color: var(--fg-muted);">{ver}</div>
+              <div class="text-xs" style="color: var(--fg-muted);">{note || m.hint}</div>
+            </button>
+          );
+        })}
+      </div>
+      <div id="db-status-note" class="mt-4 text-xs hidden" style="color: var(--fg-muted);">
+        <span id="db-status-note-text"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Body: TOC + content -->
+  <section class="mx-auto max-w-7xl px-6 py-10">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+      <!-- Sticky TOC -->
+      <aside class="lg:col-span-3 no-print">
+        <div class="lg:sticky lg:top-20">
+          <div class="font-mono text-xs uppercase tracking-widest mb-3" style="color: var(--fg-muted);">
+            Sections
+          </div>
+          <nav id="toc" class="text-sm space-y-2 border-l pl-4" style="border-color: var(--rule);">
+            <a href="#system-prep" class="block hover:opacity-70 toc-link" data-target="system-prep">1. System Prep</a>
+            <a href="#database" class="block hover:opacity-70 toc-link" data-target="database">
+              2. Database <span id="toc-db-label" class="font-mono text-xs" style="color: var(--fg-muted);"></span>
+            </a>
+            <a href="#erlang-rabbitmq" class="block hover:opacity-70 toc-link" data-target="erlang-rabbitmq">3. Erlang + RabbitMQ</a>
+            <a href="#installer" class="block hover:opacity-70 toc-link" data-target="installer">4. mo-installer</a>
+            <a href="#verify" class="block hover:opacity-70 toc-link" data-target="verify">5. Verify</a>
+          </nav>
+          <div class="mt-6 text-xs space-y-2" style="color: var(--fg-muted);">
+            <div class="font-mono uppercase tracking-widest text-[0.65rem]">Time estimate</div>
+            <div>System prep: 5 min</div>
+            <div>Database: <span id="time-db">10 min</span></div>
+            <div>Erlang + RabbitMQ: 5 min</div>
+            <div>mo-installer: 10 min</div>
+            <div>Verify: 5 min</div>
+            <div class="pt-2 border-t font-medium" style="color: var(--fg); border-color: var(--rule);">Total ~35 min</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <article class="lg:col-span-9 prose-runbook">
+        <section id="system-prep" class="scroll-mt-20">
+          <div class="font-mono text-xs uppercase tracking-widest mb-2" style="color: var(--accent);">Section 1</div>
+          <h2 class="!mt-0 !pt-0 !border-t-0">System Prep</h2>
+          {sysPrep && <sysPrep.Content />}
+        </section>
+
+        <section id="database" class="scroll-mt-20">
+          <div class="font-mono text-xs uppercase tracking-widest mb-2" style="color: var(--accent);">Section 2</div>
+          <h2><span id="db-section-title">Database</span></h2>
+          {dbKeys.map((key) => {
+            const Content = dbContent[key]?.Content;
+            const status = os.dbs[key].status as DBStatus;
+            const note = os.dbs[key].note;
+            return Content ? (
+              <div class="db-panel" data-db={key} hidden>
+                {status === 'derived' && (
+                  <div class="callout">
+                    <strong>⚠ Derived, needs review.</strong> These steps are derived from the {dbMeta[key].label} vendor's official install docs combined with the miniOrange PostgreSQL and Oracle source flow. They should work, but each command should be sanity-checked on this exact OS before production use.
+                  </div>
+                )}
+                {status === 'partial' && note && (
+                  <div class="callout">
+                    <strong>◐ Partial support.</strong> {note}
+                  </div>
+                )}
+                {status === 'unverified' && note && (
+                  <div class="callout">
+                    <strong>⚠ Unverified.</strong> {note}
+                  </div>
+                )}
+                {status === 'unsupported' && note && (
+                  <div class="callout">
+                    <strong>✕ Not supported.</strong> {note}
+                  </div>
+                )}
+                <Content />
+              </div>
+            ) : null;
+          })}
+        </section>
+
+        <section id="erlang-rabbitmq" class="scroll-mt-20">
+          <div class="font-mono text-xs uppercase tracking-widest mb-2" style="color: var(--accent);">Section 3</div>
+          <h2>Erlang + RabbitMQ</h2>
+          {erlangRMQ && <erlangRMQ.Content />}
+        </section>
+
+        <section id="installer" class="scroll-mt-20">
+          <div class="font-mono text-xs uppercase tracking-widest mb-2" style="color: var(--accent);">Section 4</div>
+          <h2>mo-installer</h2>
+          {installer && <installer.Content />}
+        </section>
+
+        <section id="verify" class="scroll-mt-20">
+          <div class="font-mono text-xs uppercase tracking-widest mb-2" style="color: var(--accent);">Section 5</div>
+          <h2>Verify &amp; Service Enablement</h2>
+          {verify && <verify.Content />}
+        </section>
+      </article>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .db-tile[aria-selected="true"] {
+    border-color: var(--accent) !important;
+    background: var(--accent-soft) !important;
+  }
+  .db-tile[aria-selected="true"]::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    border: 1px solid var(--accent);
+    pointer-events: none;
+  }
+  .toc-link.is-active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+</style>
+
+<script is:inline define:vars={{ osSlug: os.slug, dbMeta }}>
+  (function () {
+    const tiles = document.querySelectorAll('.db-tile');
+    const panels = document.querySelectorAll('.db-panel');
+    const tocDbLabel = document.getElementById('toc-db-label');
+    const dbSectionTitle = document.getElementById('db-section-title');
+    const dbStatusNote = document.getElementById('db-status-note');
+    const dbStatusNoteText = document.getElementById('db-status-note-text');
+    const timeDb = document.getElementById('time-db');
+
+    function readDBFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('db');
+    }
+
+    function pickDefault() {
+      // 1. URL
+      const fromUrl = readDBFromURL();
+      if (fromUrl && document.querySelector(`.db-tile[data-db="${fromUrl}"]:not([disabled])`)) return fromUrl;
+      // 2. localStorage
+      const stored = localStorage.getItem('mo-db');
+      if (stored && document.querySelector(`.db-tile[data-db="${stored}"]:not([disabled])`)) return stored;
+      // 3. first enabled tile
+      const first = document.querySelector('.db-tile:not([disabled])');
+      return first?.getAttribute('data-db') || 'postgres';
+    }
+
+    function selectDB(db, { updateUrl = true } = {}) {
+      tiles.forEach((t) => {
+        const isActive = t.getAttribute('data-db') === db;
+        t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      panels.forEach((p) => {
+        p.hidden = p.getAttribute('data-db') !== db;
+      });
+
+      const meta = dbMeta[db];
+      if (tocDbLabel) tocDbLabel.textContent = meta ? `(${meta.label})` : '';
+      if (dbSectionTitle) dbSectionTitle.textContent = meta ? `Database: ${meta.label} ${meta.tag}` : 'Database';
+
+      // DB-specific time estimate
+      if (timeDb) {
+        timeDb.textContent = db === 'oracle' ? '20 min' : (db === 'mssql' ? '12 min' : '10 min');
+      }
+
+      // Status note from the active tile
+      const activeTile = document.querySelector(`.db-tile[data-db="${db}"]`);
+      const status = activeTile?.getAttribute('data-status');
+      if (status === 'derived') {
+        dbStatusNoteText.textContent = 'Derived steps. Review each command before production use.';
+        dbStatusNote.classList.remove('hidden');
+      } else if (status === 'partial' || status === 'unverified') {
+        dbStatusNoteText.textContent = 'Caveats apply for this combination, see the callout in the Database section.';
+        dbStatusNote.classList.remove('hidden');
+      } else {
+        dbStatusNote.classList.add('hidden');
+      }
+
+      localStorage.setItem('mo-db', db);
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('db', db);
+        history.replaceState({}, '', url.toString());
+      }
+    }
+
+    tiles.forEach((tile) => {
+      if (tile.disabled) return;
+      tile.addEventListener('click', () => {
+        const db = tile.getAttribute('data-db');
+        if (db) selectDB(db);
+      });
+    });
+
+    selectDB(pickDefault(), { updateUrl: !readDBFromURL() ? true : true });
+
+    // Listen for back/forward
+    window.addEventListener('popstate', () => {
+      const fromUrl = readDBFromURL();
+      if (fromUrl) selectDB(fromUrl, { updateUrl: false });
+    });
+
+    // ---- Copy buttons on code blocks ----
+    document.querySelectorAll('article pre').forEach((pre) => {
+      if (pre.querySelector('.copy-btn')) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'copy-btn no-print';
+      btn.innerHTML = '<span class="copy-label">Copy</span>';
+      btn.style.cssText = `
+        position: absolute; top: 8px; right: 8px;
+        padding: 4px 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+        background: rgba(255,255,255,0.06); color: var(--code-fg);
+        border: 1px solid rgba(255,255,255,0.12); border-radius: 3px;
+        cursor: pointer; opacity: 0.6; transition: opacity 0.15s;
+      `;
+      btn.addEventListener('mouseenter', () => (btn.style.opacity = '1'));
+      btn.addEventListener('mouseleave', () => (btn.style.opacity = '0.6'));
+      btn.addEventListener('click', async () => {
+        const code = pre.querySelector('code')?.innerText || pre.innerText || '';
+        try {
+          await navigator.clipboard.writeText(code);
+          btn.querySelector('.copy-label').textContent = 'Copied';
+          btn.style.color = '#7DC68A';
+          setTimeout(() => {
+            btn.querySelector('.copy-label').textContent = 'Copy';
+            btn.style.color = '';
+          }, 1500);
+        } catch (e) {
+          btn.querySelector('.copy-label').textContent = 'Failed';
+        }
+      });
+      pre.style.position = 'relative';
+      pre.appendChild(btn);
+    });
+
+    // ---- Active TOC link on scroll ----
+    const sections = ['system-prep', 'database', 'erlang-rabbitmq', 'installer', 'verify']
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+    const tocLinks = document.querySelectorAll('.toc-link');
+
+    function updateActiveTOC() {
+      const scrollY = window.scrollY + 100;
+      let active = sections[0]?.id;
+      for (const s of sections) {
+        if (s.offsetTop <= scrollY) active = s.id;
+      }
+      tocLinks.forEach((l) => {
+        l.classList.toggle('is-active', l.getAttribute('data-target') === active);
+      });
+    }
+    window.addEventListener('scroll', updateActiveTOC, { passive: true });
+    updateActiveTOC();
+  })();
+</script>

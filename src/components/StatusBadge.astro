@@ -1,0 +1,24 @@
+---
+import type { DBStatus } from '../data/os-registry';
+
+interface Props {
+  status: DBStatus;
+  compact?: boolean;
+}
+
+const { status, compact = false } = Astro.props;
+
+const config: Record<DBStatus, { label: string; symbol: string; cls: string }> = {
+  verified:    { label: 'Verified',     symbol: '✓', cls: 'badge-verified' },
+  derived:     { label: 'Derived',      symbol: '◊', cls: 'badge-derived' },
+  partial:     { label: 'Partial',      symbol: '◐', cls: 'badge-partial' },
+  unverified:  { label: 'Unverified',   symbol: '⚠', cls: 'badge-unverified' },
+  unsupported: { label: 'Unsupported',  symbol: '✕', cls: 'badge-unsupported' },
+};
+
+const c = config[status];
+---
+<span class:list={['badge', c.cls]}>
+  <span aria-hidden="true">{c.symbol}</span>
+  {!compact && c.label}
+</span>

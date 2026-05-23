@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatusBadge from '../components/StatusBadge.astro';
+import { OSES } from '../data/os-registry';
+---
+<BaseLayout title="Verification Matrix · mo-install" pageType="detail">
+  <section class="mx-auto max-w-7xl px-6 py-10">
+    <nav aria-label="Breadcrumb" class="font-mono text-xs uppercase tracking-widest mb-4" style="color: var(--fg-muted);">
+      <a href="/" class="hover:opacity-70">All OS</a>
+      <span aria-hidden="true" class="mx-2">/</span>
+      <span style="color: var(--fg);">Verification</span>
+    </nav>
+
+    <h1 class="font-display text-4xl tracking-tightest mb-2">Verification Matrix</h1>
+    <p class="text-sm mb-8 max-w-2xl" style="color: var(--fg-muted);">
+      The single source of truth for which OS × DB combinations have been verified, derived, or
+      flagged. Built pages are linked. Unbuilt rows are in scope but pending content.
+    </p>
+
+    <div class="flex flex-wrap gap-3 mb-6 text-xs" style="color: var(--fg-muted);">
+      <span class="flex items-center gap-2"><StatusBadge status="verified" compact /> Verified against source docs</span>
+      <span class="flex items-center gap-2"><StatusBadge status="derived" compact /> Derived from vendor docs + source pattern</span>
+      <span class="flex items-center gap-2"><StatusBadge status="partial" compact /> Works in practice, not officially supported</span>
+      <span class="flex items-center gap-2"><StatusBadge status="unverified" compact /> Cannot verify, flagged in UI</span>
+      <span class="flex items-center gap-2"><StatusBadge status="unsupported" compact /> Vendor-unsupported combination</span>
+    </div>
+
+    <div class="overflow-x-auto border rounded" style="border-color: var(--rule);">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="background: var(--bg-elev);">
+            <th class="text-left p-3 font-mono text-xs uppercase tracking-wider">OS</th>
+            <th class="text-left p-3 font-mono text-xs uppercase tracking-wider">Tier</th>
+            <th class="text-left p-3 font-mono text-xs uppercase tracking-wider">PostgreSQL</th>
+            <th class="text-left p-3 font-mono text-xs uppercase tracking-wider">MySQL</th>
+            <th class="text-left p-3 font-mono text-xs uppercase tracking-wider">MSSQL</th>
+            <th class="text-left p-3 font-mono text-xs uppercase tracking-wider">Oracle</th>
+            <th class="text-left p-3 font-mono text-xs uppercase tracking-wider">Built</th>
+          </tr>
+        </thead>
+        <tbody>
+          {OSES.map((os) => (
+            <tr class="border-t" style="border-color: var(--rule);">
+              <td class="p-3">
+                {os.built ? (
+                  <a href={`/os/${os.slug}`} class="hover:opacity-70" style="color: var(--accent);">
+                    {os.name} {os.version}
+                  </a>
+                ) : (
+                  <span>{os.name} {os.version}</span>
+                )}
+              </td>
+              <td class="p-3 font-mono text-xs">T{os.tier}</td>
+              <td class="p-3"><StatusBadge status={os.dbs.postgres.status} compact /></td>
+              <td class="p-3"><StatusBadge status={os.dbs.mysql.status} compact /></td>
+              <td class="p-3"><StatusBadge status={os.dbs.mssql.status} compact /></td>
+              <td class="p-3"><StatusBadge status={os.dbs.oracle.status} compact /></td>
+              <td class="p-3 font-mono text-xs">{os.built ? '✓' : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-xs mt-6" style="color: var(--fg-muted);">
+      Notes appear in the callout banner on each OS detail page. The matrix is generated from
+      <code>src/data/os-registry.ts</code> at build time.
+    </p>
+  </section>
+</BaseLayout>

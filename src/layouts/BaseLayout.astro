@@ -1,0 +1,93 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  pageType?: 'home' | 'detail';
+}
+
+const { title, description = 'miniOrange On-Premise IDP 5.0.0 installation reference.', pageType = 'home' } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+
+    <script is:inline>
+      // Apply theme before paint to avoid flash
+      (function () {
+        const stored = localStorage.getItem('mo-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored || (prefersDark ? 'dark' : 'light');
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="no-print border-b" style="border-color: var(--rule);">
+      <div class="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3 group">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="24" height="24" rx="3" stroke="currentColor" stroke-width="1.5" />
+            <path d="M8 14 L13 19 L20 9" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <div class="flex flex-col leading-tight">
+            <span class="font-display text-lg tracking-tightest">mo-install</span>
+            <span class="text-[0.65rem] uppercase tracking-widest" style="color: var(--fg-muted);">Reference / v5.0.0</span>
+          </div>
+        </a>
+
+        <div class="flex items-center gap-4">
+          {pageType === 'detail' && (
+            <a href="/" class="text-sm hover:opacity-70" style="color: var(--fg-muted);">All OS</a>
+          )}
+          <a href="https://docs.miniorange.com" target="_blank" rel="noopener" class="text-sm hover:opacity-70 hidden sm:inline" style="color: var(--fg-muted);">Docs</a>
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Toggle theme"
+            class="w-9 h-9 grid place-items-center rounded border hover:opacity-80 transition-opacity"
+            style="border-color: var(--rule);"
+          >
+            <svg class="dark:hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+            </svg>
+            <svg class="hidden dark:block" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="no-print mt-20 border-t" style="border-color: var(--rule);">
+      <div class="mx-auto max-w-7xl px-6 py-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm" style="color: var(--fg-muted);">
+        <div>
+          mo-install reference site. Source: miniOrange On-Premise IDP 5.0.0 install guides.
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="/verification" class="hover:opacity-70">Verification report</a>
+          <span class="font-mono text-xs">v0.1.0</span>
+        </div>
+      </div>
+    </footer>
+
+    <script is:inline>
+      // Theme toggle
+      document.getElementById('theme-toggle')?.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('mo-theme', isDark ? 'dark' : 'light');
+      });
+    </script>
+  </body>
+</html>
