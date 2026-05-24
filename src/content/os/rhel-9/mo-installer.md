@@ -4,7 +4,7 @@ The miniOrange installer bundles Java 17 and Redis. You don't install either man
 
 ```bash
 cd /opt
-sudo wget https://miniorange.s3.us-east-1.amazonaws.com/public/installers/mo-installer-5.0.0.zip
+sudo wget https://miniorange.s3.us-east-1.amazonaws.com/public/installers/mo-installer/mo-installer-5.0.0.zip
 sudo unzip mo-installer-5.0.0.zip -d mo-installer-5.0.0
 cd /opt/mo-installer-5.0.0
 ls -la
